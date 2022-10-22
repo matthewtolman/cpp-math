@@ -31,7 +31,7 @@ namespace mtmath {
           }
           digits->template emplace_back(ch - '0');
         }
-        std::reverse(digits->begin(), digits->end());
+        compress();
       }
       else if constexpr (std::is_same_v<std::decay_t<T>, char*>|| std::is_same_v<std::decay_t<T>, const char*>) {
         if (number[0] == '-') {
@@ -44,7 +44,7 @@ namespace mtmath {
           }
           digits->template emplace_back(ch - '0');
         }
-        std::reverse(digits->begin(), digits->end());
+        compress();
       }
       else if constexpr (std::numeric_limits<T>::is_integer) {
         auto n = number;
@@ -53,8 +53,8 @@ namespace mtmath {
           n *= -1;
         }
         while (n > 0) {
-          digits->template emplace_back(n % 10);
-          n /= 10;
+          digits->template emplace_back(n & std::numeric_limits<uint8_t>::max());
+          n >>= std::numeric_limits<uint8_t>::digits;
         }
       }
       simplify();
@@ -73,6 +73,7 @@ namespace mtmath {
 
   private:
     void simplify();
+    void compress();
     bool abs_less_than(const BigInt& o) const noexcept;
   };
 }
