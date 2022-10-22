@@ -155,7 +155,7 @@ mtmath::BigInt mtmath::BigInt::operator/(const mtmath::BigInt &o) const noexcept
   return mtmath::BigInt();
 }
 
-void mtmath::BigInt::compress() {
+void mtmath::BigInt::compress(int base) {
   auto numerator = *digits;
   std::vector<uint8_t> result = *digits;
   digits->clear();
@@ -166,7 +166,7 @@ void mtmath::BigInt::compress() {
   uint16_t divisor_remainder = 0;
   while (!numerator.empty()) {
     for (auto n : numerator) {
-      divisor_remainder = divisor_remainder * 10 + n;
+      divisor_remainder = divisor_remainder * base + n;
       result.push_back(divisor_remainder / divide_by);
       divisor_remainder %= divide_by;
     }

@@ -16,7 +16,37 @@ namespace mtmath {
     BigInt& operator=(BigInt&& other) noexcept;
 
     template<typename T>
-    BigInt(const T& number) {
+    BigInt(const T& number, int base) {
+      static_assert(std::is_same_v<std::decay_t<T>, std::string> || std::is_same_v<std::decay_t<T>, std::string_view>
+        || std::is_same_v<std::decay_t<T>, char*>|| std::is_same_v<std::decay_t<T>, const char*>,
+          "Can only do base conversion with string types!");
+
+      if (base < 2 || base > 36) {
+        throw std::runtime_error("BigInt must come from strings in a base between 2 and 36.");
+      }
+
+      auto process_char = [&](auto ch) {
+        if (!std::isdigit(ch)) {
+          if (base <= 10 || !std::isalpha(ch)) {
+            return false;
+          }
+          else {
+            // to lowercase
+            ch |= 1 << 5;
+            if (ch - 'a' <= base - 10) {
+              digits->template emplace_back(ch - 'a' + 10);
+            }
+          }
+        }
+        else if (ch - '0' < base) {
+          digits->template emplace_back(ch - '0');
+        }
+        else {
+          return false;
+        }
+        return true;
+      };
+
       if constexpr (std::is_same_v<std::decay_t<T>, std::string> || std::is_same_v<std::decay_t<T>, std::string_view>) {
         digits->reserve(number.size());
         if (!number.empty()) {
@@ -25,37 +55,42 @@ namespace mtmath {
           }
         }
         for(size_t i = (number[0] == '-' || number[0] == '+'); i < number.size(); ++i) {
-          auto ch = number[i];
-          if (!std::isdigit(ch)) {
+          if (!process_char(number[i])) {
             break;
           }
-          digits->template emplace_back(ch - '0');
         }
-        compress();
+        compress(base);
       }
       else if constexpr (std::is_same_v<std::decay_t<T>, char*>|| std::is_same_v<std::decay_t<T>, const char*>) {
         if (number[0] == '-') {
           negative = true;
         }
         for(size_t i = (number[0] == '-' || number[0] == '+'); ; ++i) {
-          auto ch = number[i];
-          if (!std::isdigit(ch)) {
+          if (!process_char(number[i])) {
             break;
           }
-          digits->template emplace_back(ch - '0');
         }
-        compress();
+        compress(base);
       }
-      else if constexpr (std::numeric_limits<T>::is_integer) {
-        auto n = number;
-        if (n < 0) {
-          negative = true;
-          n *= -1;
-        }
-        while (n > 0) {
-          digits->template emplace_back(n & std::numeric_limits<uint8_t>::max());
-          n >>= std::numeric_limits<uint8_t>::digits;
-        }
+      simplify();
+    }
+
+    explicit BigInt(const std::string& s) : BigInt(s, 10) {}
+    explicit BigInt(const std::string_view& s) : BigInt(s, 10) {}
+    explicit BigInt(const char* c) : BigInt(c, 10) {}
+    explicit BigInt(char* c) : BigInt(c, 10) {}
+
+    template<typename T>
+    BigInt(const T& number) {
+      static_assert(std::numeric_limits<T>::is_integer, "Can only initialize from strings and integers");
+      auto n = number;
+      if (n < 0) {
+        negative = true;
+        n *= -1;
+      }
+      while (n > 0) {
+        digits->template emplace_back(n & std::numeric_limits<uint8_t>::max());
+        n >>= std::numeric_limits<uint8_t>::digits;
       }
       simplify();
     }
@@ -73,7 +108,7 @@ namespace mtmath {
 
   private:
     void simplify();
-    void compress();
+    void compress(int base);
     bool abs_less_than(const BigInt& o) const noexcept;
   };
 }

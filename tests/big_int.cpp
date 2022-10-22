@@ -2,14 +2,6 @@
 #include "doctest.h"
 
 TEST_SUITE("BigInt") {
-
-
-  TEST_CASE("8524631")
-  {
-    auto bi = mtmath::BigInt("8524631");
-    CHECK_EQ(bi.to_string(), "0x821357");
-  }
-
   TEST_CASE("To String") {
     SUBCASE("1")
     {
@@ -37,7 +29,7 @@ TEST_SUITE("BigInt") {
 
     SUBCASE("5")
     {
-      auto bi = mtmath::BigInt(std::string_view("-768462"));
+      auto bi = mtmath::BigInt(std::string_view("-768462"), 10);
       CHECK_EQ(bi.to_string(), "-0xbb9ce");
     }
 
@@ -57,6 +49,42 @@ TEST_SUITE("BigInt") {
     {
       auto bi = mtmath::BigInt("000023");
       CHECK_EQ(bi.to_string(), "0x17");
+    }
+
+    SUBCASE("from hex")
+    {
+      auto bi = mtmath::BigInt("16a999", 16);
+      CHECK_EQ(bi.to_string(), "0x16a999");
+    }
+
+    SUBCASE("from octal")
+    {
+      auto bi = mtmath::BigInt("5524631", 8);
+      CHECK_EQ(bi.to_string(), "0x16a999");
+    }
+
+    SUBCASE("from base 3")
+    {
+      auto bi = mtmath::BigInt("2210110022202", 3);
+      CHECK_EQ(bi.to_string(), "0x16a999");
+    }
+
+    SUBCASE("from base 32")
+    {
+      auto bi = mtmath::BigInt("1dacp", 32);
+      CHECK_EQ(bi.to_string(), "0x16a999");
+    }
+
+    SUBCASE("from base 36")
+    {
+      auto bi = mtmath::BigInt("vtzt", 36);
+      CHECK_EQ(bi.to_string(), "0x16a999");
+    }
+
+    SUBCASE("from base 2")
+    {
+      auto bi = mtmath::BigInt("101101010100110011001", 2);
+      CHECK_EQ(bi.to_string(), "0x16a999");
     }
   }
 
