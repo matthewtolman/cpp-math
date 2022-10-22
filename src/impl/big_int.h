@@ -95,16 +95,21 @@ namespace mtmath {
       simplify();
     }
 
-    [[nodiscard]] std::string to_string() const;
+    [[nodiscard]] std::string to_string(int base) const;
 
     [[nodiscard]] BigInt operator-() const;
     [[nodiscard]] BigInt operator+(const BigInt& o) const noexcept;
     [[nodiscard]] BigInt operator-(const BigInt& o) const noexcept;
-    [[nodiscard]] BigInt operator/(const BigInt& o) const noexcept;
-    [[nodiscard]] BigInt operator*(const BigInt& o) const noexcept;
+//    [[nodiscard]] BigInt operator/(const BigInt& o) const noexcept;
+//    [[nodiscard]] BigInt operator*(const BigInt& o) const noexcept;
 
-    [[nodiscard]] bool operator==(const BigInt& o) const noexcept;
-    [[nodiscard]] bool operator!=(const BigInt& o) const noexcept;
+    [[nodiscard]] int compare(const BigInt& o) const noexcept;
+    [[nodiscard]] bool operator==(const BigInt& o) const noexcept { return compare(o) == 0; }
+    [[nodiscard]] bool operator!=(const BigInt& o) const noexcept { return compare(o) != 0; }
+    [[nodiscard]] bool operator<(const BigInt& o) const noexcept { return compare(o) < 0; }
+    [[nodiscard]] bool operator<=(const BigInt& o) const noexcept { return compare(o) <= 0; }
+    [[nodiscard]] bool operator>(const BigInt& o) const noexcept { return compare(o) > 0; }
+    [[nodiscard]] bool operator>=(const BigInt& o) const noexcept { return compare(o) >= 0; }
 
   private:
     void simplify();

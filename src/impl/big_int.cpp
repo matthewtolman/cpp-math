@@ -12,28 +12,33 @@ static char hex_char(uint8_t half_byte) {
   return 'a' + (half_byte - 10);
 }
 
-std::string mtmath::BigInt::to_string() const {
+std::string mtmath::BigInt::to_string(int base) const {
   if (digits->size() == 0) {
     return "0";
   }
-  std::string str;
-  str.reserve((digits->size() * 2) + (negative ? 1 : 0));
 
-  for (auto d : *digits) {
-    uint8_t char1 = d & 0x0f;
-    uint8_t char2 = (d & 0xf0) >> 4;
-    str.push_back(hex_char(char1));
-    str.push_back(hex_char(char2));
+  std::string str;
+  if (base == 16) {
+    str.reserve((digits->size() * 2) + (negative ? 1 : 0));
+
+    for (auto d: *digits) {
+      uint8_t char1 = d & 0x0f;
+      uint8_t char2 = (d & 0xf0) >> 4;
+      str.push_back(hex_char(char1));
+      str.push_back(hex_char(char2));
+    }
+    if (str[str.size() - 1] == '0') {
+      str.erase(str.begin() + str.size() - 1);
+    }
+    str.push_back('x');
+    str.push_back('0');
+    if (negative) {
+      str.push_back('-');
+    }
+    std::reverse(str.begin(), str.end());
   }
-  if (str[str.size() - 1] == '0') {
-    str.erase(str.begin() + str.size() - 1);
-  }
-  str.push_back('x');
-  str.push_back('0');
-  if (negative) {
-    str.push_back('-');
-  }
-  std::reverse(str.begin(), str.end());
+
+  str.shrink_to_fit();
   return str;
 }
 
@@ -44,28 +49,12 @@ void mtmath::BigInt::simplify(){
         digits->erase(digits->begin() + i, digits->end());
         digits->shrink_to_fit();
       }
+      if (digits->size() == 0) {
+        negative = false;
+      }
       return;
     }
   }
-}
-
-bool mtmath::BigInt::operator==(const mtmath::BigInt &o) const noexcept {
-  if (negative != o.negative) {
-    return false;
-  }
-  if (digits->size() != o.digits->size()) {
-    return false;
-  }
-  for (size_t i = 0; i < digits->size(); ++i) {
-    if (digits->at(i) != o.digits->at(i)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool mtmath::BigInt::operator!=(const mtmath::BigInt &o) const noexcept {
-  return !(*this == o);
 }
 
 mtmath::BigInt mtmath::BigInt::operator-() const {
@@ -151,9 +140,14 @@ bool mtmath::BigInt::abs_less_than(const mtmath::BigInt &o) const noexcept {
   }
   return false;
 }
-mtmath::BigInt mtmath::BigInt::operator/(const mtmath::BigInt &o) const noexcept {
-  return mtmath::BigInt();
-}
+//mtmath::BigInt mtmath::BigInt::operator/(const mtmath::BigInt &denominator) const noexcept {
+//  auto numerator = *this;
+//  if (denominator > numerator) {
+//    return BigInt{};
+//  }
+//  numerator.negative = numerator.negative ^ denominator.negative;
+//
+//}
 
 void mtmath::BigInt::compress(int base) {
   auto numerator = *digits;
@@ -185,4 +179,22 @@ void mtmath::BigInt::compress(int base) {
 
   simplify();
   digits->shrink_to_fit();
+}
+
+int mtmath::BigInt::compare(const mtmath::BigInt &o) const noexcept {
+  if (negative != o.negative) {
+    return negative ? -1 : 1;
+  }
+  else if (digits->size() != o.digits->size()) {
+    return digits->size() > o.digits->size() ? 1 : -1;
+  }
+  else {
+    for (size_t i = 0; i < digits->size(); ++i) {
+      auto index = digits->size() - i - 1;
+      if (digits->at(index) != o.digits->at(index)) {
+        return digits->at(index) < o.digits->at(index) ? -1 : 1;
+      }
+    }
+  }
+  return 0;
 }
