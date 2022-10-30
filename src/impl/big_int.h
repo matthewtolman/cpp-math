@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
+#include "byte_array.h"
 
 namespace mtmath {
   class BigInt {
@@ -12,8 +13,8 @@ namespace mtmath {
     };
 
     uint8_t flags = 0x0;
-    std::shared_ptr<std::vector<uint8_t>> digits = std::make_shared<std::vector<uint8_t>>();
-    BigInt(uint8_t flags, std::shared_ptr<std::vector<uint8_t>> digits);
+    std::shared_ptr<ByteArray> digits = std::make_shared<ByteArray>();
+    BigInt(uint8_t flags, std::shared_ptr<ByteArray> digits);
 
     static BigInt zeroConst;
     static BigInt oneConst;
@@ -57,12 +58,12 @@ namespace mtmath {
             // to lowercase
             ch |= 1 << 5;
             if (ch - 'a' <= base - 10) {
-              digits->template emplace_back(ch - 'a' + 10);
+              digits->emplace_back(ch - 'a' + 10);
             }
           }
         }
         else if (ch - '0' < base) {
-          digits->template emplace_back(ch - '0');
+          digits->emplace_back(ch - '0');
         }
         else {
           return false;
@@ -112,7 +113,7 @@ namespace mtmath {
         n *= -1;
       }
       while (n > 0) {
-        digits->template emplace_back(n & std::numeric_limits<uint8_t>::max());
+        digits->emplace_back(n & std::numeric_limits<uint8_t>::max());
         n >>= std::numeric_limits<uint8_t>::digits;
       }
       simplify();

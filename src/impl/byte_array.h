@@ -6,8 +6,6 @@
 namespace mtmath {
   class ByteArray {
     std::vector<uint8_t> bytes;
-
-    void simplify();
   public:
     ByteArray() = default;
     explicit ByteArray(std::vector<uint8_t> bytes) : bytes(std::move(bytes)) {}
@@ -46,6 +44,31 @@ namespace mtmath {
     bool operator>(const ByteArray& o) const noexcept { return compare(o) > 0; }
     bool operator!=(const std::vector<uint8_t>&b) const noexcept { return compare(b) != 0; }
     bool operator!=(const ByteArray& o) const noexcept { return compare(o) != 0; }
+
+    uint8_t& operator[](size_t i) { return bytes.at(i); }
+    const uint8_t& operator[](size_t i) const { return bytes.at(i); }
+    uint8_t& at(size_t i) { return bytes.at(i); }
+    const uint8_t& at(size_t i) const { return bytes.at(i); }
+
+    ByteArray& emplace_back(uint8_t byte) { bytes.emplace_back(byte); return *this; }
+    ByteArray& reserve(size_t size) { bytes.reserve(size); return *this; }
+    size_t size() const noexcept { return bytes.size(); }
+    decltype(auto) begin() const { return bytes.begin(); }
+    decltype(auto) begin() { return bytes.begin(); }
+    decltype(auto) end() const { return bytes.end(); }
+    decltype(auto) end() { return bytes.end(); }
+
+    void erase(decltype(bytes)::iterator begin, decltype(bytes)::iterator end) {
+      std::fill(begin, end, 0);
+      simplify();
+    }
+    void simplify();
+
+    void clear() {
+      bytes.clear();
+    }
+
+    [[nodiscard]] bool empty() const { return bytes.empty(); }
 
     template <typename T>
     T as() const noexcept {

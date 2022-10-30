@@ -9,7 +9,7 @@ mtmath::BigInt mtmath::BigInt::invalidConst = BigInt{INVALID, nullptr};
 mtmath::BigInt::BigInt() { *this = zeroConst; }
 mtmath::BigInt::BigInt(const mtmath::BigInt &other) = default;
 mtmath::BigInt::BigInt(mtmath::BigInt &&other) noexcept : flags(other.flags), digits(std::move(other.digits)) {}
-mtmath::BigInt::BigInt(uint8_t flags, std::shared_ptr<std::vector<uint8_t>> digits) : flags(flags), digits(std::move(digits)) {simplify();}
+mtmath::BigInt::BigInt(uint8_t flags, std::shared_ptr<ByteArray> digits) : flags(flags), digits(std::move(digits)) {simplify();}
 
 static char hex_char(uint8_t half_byte) {
   if (half_byte < 10) {
@@ -62,7 +62,6 @@ void mtmath::BigInt::simplify(){
     if (digits->at(i - 1) != 0) {
       if (i != digits->size()) {
         digits->erase(digits->begin() + static_cast<std::vector<uint8_t>::difference_type>(i), digits->end());
-        digits->shrink_to_fit();
       }
       if (digits->size() == 1 && digits->at(0) == 1) {
         *this = oneConst;
@@ -92,7 +91,7 @@ mtmath::BigInt mtmath::BigInt::operator+(const mtmath::BigInt &o) const noexcept
     return r;
   }
   if (flags == o.flags) {
-    auto newDigits = std::make_shared<std::vector<uint8_t>>();
+    auto newDigits = std::make_shared<ByteArray>();
     newDigits->reserve(std::max(o.digits->size(), digits->size()) + 1);
     uint16_t buffer = 0;
     for (size_t index = 0; index < o.digits->size() || index < digits->size(); ++index) {
@@ -126,7 +125,7 @@ mtmath::BigInt mtmath::BigInt::operator-(const mtmath::BigInt &o) const noexcept
   }
 
   if (flags == o.flags) {
-    auto newDigits = std::make_shared<std::vector<uint8_t>>();
+    auto newDigits = std::make_shared<ByteArray>();
     newDigits->reserve(std::max(o.digits->size(), digits->size()));
 
     bool abs_less = this->abs_less_than(o);
@@ -232,8 +231,11 @@ mtmath::BigInt mtmath::BigInt::operator*(const mtmath::BigInt &o) const noexcept
 
 
 void mtmath::BigInt::compress(int base) {
-  auto numerator = *digits;
-  std::vector<uint8_t> result = *digits;
+  std::vector<uint8_t> numerator;
+  numerator.reserve(digits->size());
+  std::copy(digits->begin(), digits->end(), std::back_inserter(numerator));
+  std::vector<uint8_t> result;
+  result.reserve(digits->size());
   digits->clear();
   result.clear();
 
@@ -323,7 +325,7 @@ mtmath::BigInt mtmath::BigInt::abs() const noexcept {
 
 mtmath::BigInt mtmath::BigInt::fresh() {
   BigInt r{};
-  r.digits = std::make_shared<std::vector<uint8_t>>();
+  r.digits = std::make_shared<ByteArray>();
   return r;
 }
 std::tuple<mtmath::BigInt, mtmath::BigInt> mtmath::BigInt::divide(const mtmath::BigInt &denominator) const noexcept {
