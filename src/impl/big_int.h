@@ -2,18 +2,41 @@
 
 #include <vector>
 #include <string>
+#include <tuple>
 
 namespace mtmath {
   class BigInt {
-    bool negative = false;
+    enum FLAGS {
+      NEGATIVE = 0x1,
+      INVALID = 0x2
+    };
+
+    uint8_t flags = 0x0;
     std::shared_ptr<std::vector<uint8_t>> digits = std::make_shared<std::vector<uint8_t>>();
-    BigInt(bool negative, std::shared_ptr<std::vector<uint8_t>> digits);
+    BigInt(uint8_t flags, std::shared_ptr<std::vector<uint8_t>> digits);
+
+    static BigInt zeroConst;
+    static BigInt oneConst;
+    static BigInt invalidConst;
+
+    static BigInt fresh();
+
   public:
     BigInt();
     BigInt(const BigInt& other);
     BigInt(BigInt&& other) noexcept;
     BigInt& operator=(const BigInt& other);
     BigInt& operator=(BigInt&& other) noexcept;
+
+    [[nodiscard]] static BigInt zero();
+    [[nodiscard]] static BigInt one();
+    [[nodiscard]] static BigInt invalid();
+
+    [[nodiscard]] bool is_zero() const noexcept;
+    [[nodiscard]] bool is_valid() const noexcept;
+    [[nodiscard]] bool is_negative() const noexcept;
+
+    [[nodiscard]] BigInt abs() const noexcept;
 
     template<typename T>
     BigInt(const T& number, int base) {
@@ -51,7 +74,7 @@ namespace mtmath {
         digits->reserve(number.size());
         if (!number.empty()) {
           if (number[0] == '-') {
-            negative = true;
+            flags |= NEGATIVE;
           }
         }
         for(size_t i = (number[0] == '-' || number[0] == '+'); i < number.size(); ++i) {
@@ -63,7 +86,7 @@ namespace mtmath {
       }
       else if constexpr (std::is_same_v<std::decay_t<T>, char*>|| std::is_same_v<std::decay_t<T>, const char*>) {
         if (number[0] == '-') {
-          negative = true;
+          flags |= NEGATIVE;
         }
         for(size_t i = (number[0] == '-' || number[0] == '+'); ; ++i) {
           if (!process_char(number[i])) {
@@ -85,7 +108,7 @@ namespace mtmath {
       static_assert(std::numeric_limits<T>::is_integer, "Can only initialize from strings and integers");
       auto n = number;
       if (n < 0) {
-        negative = true;
+        flags |= NEGATIVE;
         n *= -1;
       }
       while (n > 0) {
@@ -100,8 +123,10 @@ namespace mtmath {
     [[nodiscard]] BigInt operator-() const;
     [[nodiscard]] BigInt operator+(const BigInt& o) const noexcept;
     [[nodiscard]] BigInt operator-(const BigInt& o) const noexcept;
-//    [[nodiscard]] BigInt operator/(const BigInt& o) const noexcept;
-//    [[nodiscard]] BigInt operator*(const BigInt& o) const noexcept;
+    [[nodiscard]] BigInt operator/(const BigInt& o) const noexcept;
+    [[nodiscard]] BigInt operator%(const BigInt& o) const noexcept;
+    [[nodiscard]] BigInt operator*(const BigInt& o) const noexcept;
+    [[nodiscard]] std::tuple<BigInt, BigInt> divide(const BigInt& denominator) const noexcept;
 
     [[nodiscard]] int compare(const BigInt& o) const noexcept;
     [[nodiscard]] bool operator==(const BigInt& o) const noexcept { return compare(o) == 0; }

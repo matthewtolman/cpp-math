@@ -168,6 +168,13 @@ TEST_SUITE("BigInt") {
     CHECK_FALSE(mtmath::BigInt(1485208) <= mtmath::BigInt(1484209));
   }
 
+  TEST_CASE("Multiply") {
+    CHECK_EQ((mtmath::BigInt(1485209) * mtmath::BigInt("2")).to_string(16), "0x2d5332");
+    CHECK_EQ((mtmath::BigInt(1485209) * mtmath::BigInt("-2")).to_string(16), "-0x2d5332");
+    CHECK_EQ((mtmath::BigInt(-1485209) * mtmath::BigInt("2")).to_string(16), "-0x2d5332");
+    CHECK_EQ((mtmath::BigInt(-1485209) * mtmath::BigInt("-2")).to_string(16), "0x2d5332");
+  }
+
 //  TEST_CASE("Divide") {
 //    std::string s = (mtmath::BigInt(1485209) / mtmath::BigInt("2")).to_string(16);
 //    CHECK_EQ(s, "0xb54cc");
