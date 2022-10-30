@@ -2,6 +2,7 @@
 
 #include <bit>
 #include <vector>
+#include <compare>
 
 namespace mtmath {
   class ByteArray {
@@ -32,25 +33,15 @@ namespace mtmath {
     ByteArray operator>>(size_t amount) const;
     ByteArray& operator>>=(size_t amount);
 
-    bool operator==(const std::vector<uint8_t>&b) const noexcept { return compare(b) == 0; }
-    bool operator==(const ByteArray& o) const noexcept { return compare(o) == 0; }
-    bool operator<=(const std::vector<uint8_t>&b) const noexcept { return compare(b) <= 0; }
-    bool operator<=(const ByteArray& o) const noexcept { return compare(o) <= 0; }
-    bool operator>=(const std::vector<uint8_t>&b) const noexcept { return compare(b) >= 0; }
-    bool operator>=(const ByteArray& o) const noexcept { return compare(o) >= 0; }
-    bool operator<(const std::vector<uint8_t>&b) const noexcept { return compare(b) < 0; }
-    bool operator<(const ByteArray& o) const noexcept { return compare(o) < 0; }
-    bool operator>(const std::vector<uint8_t>&b) const noexcept { return compare(b) > 0; }
-    bool operator>(const ByteArray& o) const noexcept { return compare(o) > 0; }
-    bool operator!=(const std::vector<uint8_t>&b) const noexcept { return compare(b) != 0; }
-    bool operator!=(const ByteArray& o) const noexcept { return compare(o) != 0; }
+    [[nodiscard]] std::strong_ordering operator<=>(const ByteArray& o) const noexcept;
+    bool operator==(const ByteArray& o) const noexcept { return *this <=> o == std::strong_ordering::equal; }
 
     uint8_t& operator[](size_t i) { return at(i); }
     const uint8_t& operator[](size_t i) const noexcept { return at(i); }
     uint8_t& at(size_t i) { return bytes.at(i); }
     const uint8_t& at(size_t i) const { return bytes.at(i); }
 
-    uint8_t get(size_t i) { return i < bytes.size() ? bytes.at(i) : 0U; }
+    uint8_t get(size_t i) const { return i < bytes.size() ? bytes.at(i) : 0U; }
 
     ByteArray& emplace_back(uint8_t byte) { bytes.emplace_back(byte); return *this; }
     ByteArray& reserve(size_t size) { bytes.reserve(size); return *this; }

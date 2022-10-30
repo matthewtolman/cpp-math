@@ -16,23 +16,76 @@ TEST_SUITE("Byte Array") {
 
   TEST_CASE("& operator") {
     auto ba = mtmath::ByteArray::from<uint64_t>(0xffffff0f);
-    ba &= mtmath::ByteArray::from<uint64_t>(0x1f003f);
+    ba = ba & mtmath::ByteArray::from<uint64_t>(0x1f003f);
     auto num = ba.as<uint64_t>();
     CHECK_EQ(num, 0x001f000f);
   }
 
   TEST_CASE("| operator") {
     auto ba = mtmath::ByteArray::from<uint64_t>(0x30);
-    ba |= mtmath::ByteArray::from<uint64_t>(0x001f003f);
+    ba = ba | mtmath::ByteArray::from<uint64_t>(0x001f003f);
     auto num = ba.as<uint64_t>();
     CHECK_EQ(num, 0x001f003f);
   }
 
   TEST_CASE("^ operator") {
     auto ba = mtmath::ByteArray::from<uint64_t>(0x30);
+    ba = ba ^ mtmath::ByteArray::from<uint64_t>(0x001f003f);
+    auto num = ba.as<uint64_t>();
+    CHECK_EQ(num, 0x001f000f);
+  }
+
+  TEST_CASE("&= operator") {
+    auto ba = mtmath::ByteArray::from<uint64_t>(0xffffff0f);
+    ba &= mtmath::ByteArray::from<uint64_t>(0x1f003f);
+    auto num = ba.as<uint64_t>();
+    CHECK_EQ(num, 0x001f000f);
+  }
+
+  TEST_CASE("|= operator") {
+    auto ba = mtmath::ByteArray::from<uint64_t>(0x30);
+    ba |= mtmath::ByteArray::from<uint64_t>(0x001f003f);
+    auto num = ba.as<uint64_t>();
+    CHECK_EQ(num, 0x001f003f);
+  }
+
+  TEST_CASE("^= operator") {
+    auto ba = mtmath::ByteArray::from<uint64_t>(0x30);
     ba ^= mtmath::ByteArray::from<uint64_t>(0x001f003f);
     auto num = ba.as<uint64_t>();
     CHECK_EQ(num, 0x001f000f);
+  }
+
+  TEST_CASE("[] operator") {
+    auto ba = mtmath::ByteArray::from<uint64_t>(0x1030);
+    CHECK_EQ(ba[0], 0x30);
+    CHECK_EQ(ba[1], 0x10);
+    const auto& ba2 = ba;
+    CHECK_EQ(ba2[0], 0x30);
+    CHECK_EQ(ba2[1], 0x10);
+  }
+
+  TEST_CASE("get") {
+    auto ba = mtmath::ByteArray::from<uint64_t>(0x1030);
+    CHECK_EQ(ba.get(0), 0x30);
+    CHECK_EQ(ba.get(1), 0x10);
+    CHECK_EQ(ba.get(1000), 0x0);
+  }
+
+  TEST_CASE("const range") {
+    const auto ba = mtmath::ByteArray::from<uint64_t>(0x1030);
+    auto it = 0;
+    for (const auto& b : ba) {
+      ++it;
+    }
+    CHECK_EQ(it, 2);
+  }
+
+  TEST_CASE("Erase") {
+    auto ba = mtmath::ByteArray::from<uint64_t>(0x123456789);
+    ba.erase(ba.begin() + 1, ba.begin() + 2);
+    auto num = ba.as<uint64_t>();
+    CHECK_EQ(num, 0x123450089);
   }
 
   TEST_CASE("<< operator") {
@@ -125,5 +178,22 @@ TEST_SUITE("Byte Array") {
       auto num = ba.as<uint64_t>();
       CHECK_EQ(num, 0xae8472818U >> 3);
     }
+
+    SUBCASE("Shift Right 3000") {
+      auto ba = mtmath::ByteArray::from<uint64_t>(0xae8472818U);
+      ba >>= 3000;
+      auto num = ba.as<uint64_t>();
+      CHECK_EQ(num, 0);
+    }
+  }
+
+  TEST_CASE("Comparison") {
+    CHECK_EQ(mtmath::ByteArray::from<uint64_t>(0x30), mtmath::ByteArray::from<uint64_t>(0x30));
+    CHECK_NE(mtmath::ByteArray::from<uint64_t>(0x30), mtmath::ByteArray::from<uint64_t>(0x1030));
+    CHECK_EQ(mtmath::ByteArray::from<uint64_t>(0x30) <=> mtmath::ByteArray::from<uint64_t>(0x30), std::strong_ordering::equal);
+    CHECK_EQ(mtmath::ByteArray::from<uint64_t>(0x30) <=> mtmath::ByteArray::from<uint64_t>(0x1030), std::strong_ordering::less);
+    CHECK_EQ(mtmath::ByteArray::from<uint64_t>(0x1030) <=> mtmath::ByteArray::from<uint64_t>(0x30), std::strong_ordering::greater);
+    CHECK_EQ(mtmath::ByteArray::from<uint64_t>(0x30) <=> mtmath::ByteArray::from<uint64_t>(0x31), std::strong_ordering::less);
+    CHECK_EQ(mtmath::ByteArray::from<uint64_t>(0x31) <=> mtmath::ByteArray::from<uint64_t>(0x30), std::strong_ordering::greater);
   }
 }

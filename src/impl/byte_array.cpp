@@ -1,15 +1,12 @@
 #include "byte_array.h"
 
-int mtmath::ByteArray::compare(const std::vector<uint8_t> &b) const noexcept {
-  if (bytes.size() != b.size()) {
-    return bytes.size() < b.size() ? -1 : 1;
-  }
-  for (size_t i = 0; i < b.size(); ++i) {
-    if (bytes.at(i) != b.at(i)) {
-      return bytes.at(i) < b.at(i) ? -1 : 1;
+std::strong_ordering mtmath::ByteArray::operator<=>(const ByteArray& o) const noexcept {
+  for (size_t i = 0; i < o.bytes.size() && i < bytes.size(); ++i) {
+    if (bytes[i] != o.bytes[i]) {
+      return bytes[i] < o.bytes[i] ? std::strong_ordering::less : std::strong_ordering::greater;
     }
   }
-  return 0;
+  return bytes.size() <=> o.bytes.size();
 }
 
 mtmath::ByteArray mtmath::ByteArray::operator&(const std::vector<uint8_t> &b) const noexcept {
@@ -110,6 +107,7 @@ mtmath::ByteArray& mtmath::ByteArray::operator<<=(size_t amount) {
   }
   return *this;
 }
+
 mtmath::ByteArray& mtmath::ByteArray::operator>>=(size_t amount) {
   // Doing right shifts since we store bits backwards
   // (makes mem copying on little endian systems more efficient)

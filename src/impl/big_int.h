@@ -30,6 +30,7 @@ namespace mtmath {
 
     [[nodiscard]] static BigInt zero() { return BigInt{}; }
     [[nodiscard]] static BigInt one() { return BigInt{1}; }
+    [[nodiscard]] static BigInt two() { return BigInt{2}; }
     [[nodiscard]] static BigInt invalid() { return BigInt{INVALID, ByteArray{}}; }
 
     [[nodiscard]] bool is_zero() const noexcept { return digits.empty(); }
@@ -102,7 +103,6 @@ namespace mtmath {
     explicit BigInt(const std::string& s) : BigInt(s, 10) {}
     explicit BigInt(const std::string_view& s) : BigInt(s, 10) {}
     explicit BigInt(const char* c) : BigInt(c, 10) {}
-    explicit BigInt(char* c) : BigInt(c, 10) {}
 
     template<typename T>
     BigInt(const T& number) {
@@ -167,6 +167,7 @@ namespace mtmath {
 
       static BigInt zeroConst;
       static BigInt oneConst;
+      static BigInt twoConst;
       static BigInt invalidConst;
 
       static BigInt fresh();
@@ -180,6 +181,7 @@ namespace mtmath {
 
       [[nodiscard]] static BigInt zero();
       [[nodiscard]] static BigInt one();
+      [[nodiscard]] static BigInt two();
       [[nodiscard]] static BigInt invalid();
 
       [[nodiscard]] bool is_zero() const noexcept;
@@ -252,7 +254,6 @@ namespace mtmath {
       explicit BigInt(const std::string& s) : BigInt(s, 10) {}
       explicit BigInt(const std::string_view& s) : BigInt(s, 10) {}
       explicit BigInt(const char* c) : BigInt(c, 10) {}
-      explicit BigInt(char* c) : BigInt(c, 10) {}
 
       template<typename T>
       BigInt(const T& number) {
@@ -312,7 +313,7 @@ public:
   static constexpr bool has_signaling_NaN = false;
   static constexpr std::float_denorm_style has_denorm = std::denorm_absent;
   static constexpr bool has_denorm_loss = false;
-  static constexpr std::float_round_style round_style = std::round_to_nearest;
+  static constexpr std::float_round_style round_style = std::round_toward_zero;
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = false;
   static constexpr bool is_modulo = false;
@@ -373,7 +374,7 @@ public:
   static constexpr bool has_signaling_NaN = false;
   static constexpr std::float_denorm_style has_denorm = std::denorm_absent;
   static constexpr bool has_denorm_loss = false;
-  static constexpr std::float_round_style round_style = std::round_to_nearest;
+  static constexpr std::float_round_style round_style = std::round_toward_zero;
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = false;
   static constexpr bool is_modulo = false;

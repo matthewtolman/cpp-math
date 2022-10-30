@@ -45,7 +45,7 @@ std::strong_ordering mtmath::BigInt::operator<=>(const BigInt &o) const noexcept
   else {
     auto cmp = abs_compare(o);
     if (cmp < 0) {
-      return std::strong_ordering::less;;
+      return std::strong_ordering::less;
     }
     else if (cmp > 0) {
       return std::strong_ordering::greater;
@@ -226,7 +226,12 @@ mtmath::BigInt& mtmath::BigInt::operator>>=(size_t i) {
 }
 
 mtmath::immut::BigInt mtmath::BigInt::to_immut() const {
-  return mtmath::immut::BigInt{flags, std::make_shared<ByteArray>(digits)};
+  if (is_valid()) {
+    return mtmath::immut::BigInt{flags, std::make_shared<ByteArray>(digits)};
+  }
+  else {
+    return mtmath::immut::BigInt{flags, nullptr};
+  }
 }
 
 std::string mtmath::BigInt::to_string(int base) const {
@@ -303,6 +308,7 @@ int mtmath::BigInt::abs_compare(const mtmath::BigInt &o) const noexcept {
 
 mtmath::immut::BigInt mtmath::immut::BigInt::zeroConst = mtmath::immut::BigInt{};
 mtmath::immut::BigInt mtmath::immut::BigInt::oneConst = mtmath::immut::BigInt{1};
+mtmath::immut::BigInt mtmath::immut::BigInt::twoConst = mtmath::immut::BigInt{2};
 mtmath::immut::BigInt mtmath::immut::BigInt::invalidConst = mtmath::immut::BigInt{INVALID, nullptr};
 
 mtmath::immut::BigInt::BigInt() { *this = zeroConst; }
@@ -370,8 +376,16 @@ void mtmath::immut::BigInt::simplify(){
       if (i != digits->size()) {
         digits->erase(digits->begin() + static_cast<std::vector<uint8_t>::difference_type>(i), digits->end());
       }
-      if (digits->size() == 1 && digits->at(0) == 1) {
-        *this = oneConst;
+      if (digits->size() == 1) {
+        auto flgs = flags;
+        if (digits->at(0) == 1) {
+          *this = oneConst;
+          flags = flgs;
+        }
+        else if (digits->at(0) == 2) {
+          *this = twoConst;
+          flags = flgs;
+        }
       }
       return;
     }
@@ -502,6 +516,10 @@ mtmath::immut::BigInt mtmath::immut::BigInt::operator*(const mtmath::immut::BigI
     return r;
   }
 
+  if (is_zero() || o.is_zero()) {
+    return zero();
+  }
+
   auto result = BigInt::fresh();
 
   result.flags = flags ^ o.flags;
@@ -585,6 +603,9 @@ std::strong_ordering mtmath::immut::BigInt::operator<=>(const mtmath::immut::Big
   else if (is_negative() != o.is_negative()) {
     return is_negative() ? std::strong_ordering::less : std::strong_ordering::greater;
   }
+  else if (digits == o.digits) {
+    return std::strong_ordering::equal;
+  }
   else if (digits->size() != o.digits->size()) {
     return digits->size() > o.digits->size() ? std::strong_ordering::greater : std::strong_ordering::less;
   }
@@ -653,5 +674,10 @@ mtmath::immut::BigInt mtmath::immut::BigInt::operator>>(size_t i) const noexcept
 }
 
 mtmath::BigInt mtmath::immut::BigInt::to_mut() const {
-  return mtmath::BigInt{flags, *digits};
+  if (is_valid()) {
+    return mtmath::BigInt{flags, *digits};
+  }
+  else {
+    return mtmath::BigInt{flags, ByteArray{}};
+  }
 }
