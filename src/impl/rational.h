@@ -1,5 +1,6 @@
 #pragma once
 
+#include "big_int.h"
 #include <memory>
 
 namespace mtmath {
@@ -46,21 +47,29 @@ namespace mtmath {
     [[nodiscard]] bool is_pos_infinity() const noexcept { return denominator == 0 && numerator > 0; }
     [[nodiscard]] bool is_neg_infinity() const noexcept { return denominator == 0 && numerator < 0; }
     [[nodiscard]] bool is_finite() const noexcept { return denominator != 0; }
-    [[nodiscard]] bool operator==(const RationalBase& o) const noexcept { return numerator == o.numerator && denominator == o.denominator; }
-    [[nodiscard]] bool operator!=(const RationalBase& o) const noexcept { return !((*this) == o); }
-    [[nodiscard]] bool operator<(const RationalBase& o) const noexcept {
-      if (denominator == o.denominator) {
-        return numerator < o.numerator;
+    [[nodiscard]] std::strong_ordering operator<=>(const RationalBase& o) const noexcept {
+      auto n1 = numerator;
+      auto n2 = o.numerator;
+      if (denominator != o.denominator) {
+        n1 = numerator * o.denominator;
+        n2 = o.numerator * denominator;
+      }
+
+      auto cmp = n1 <=> n2;
+
+      if (cmp < 0) {
+        return std::strong_ordering::less;
+      }
+      else if (cmp > 0) {
+        return std::strong_ordering::greater;
       }
       else {
-        auto n1 = numerator * o.denominator;
-        auto n2 = o.numerator * o.denominator;
-        return n1 < n2;
+        return std::strong_ordering::equal;
       }
     }
-    [[nodiscard]] bool operator>=(const RationalBase& o) const noexcept { return !((*this) < o); }
-    [[nodiscard]] bool operator>(const RationalBase& o) const noexcept { return ((*this) != o) && ((*this) >= o); }
-    [[nodiscard]] bool operator<=(const RationalBase& o) const noexcept { return ((*this) == o) || ((*this) < o); }
+    [[nodiscard]] bool operator==(const RationalBase& o) const noexcept {
+      return ((*this) <=> o) == std::strong_ordering::equal;
+    }
 
     RationalBase operator-() const noexcept {
       if constexpr (std::numeric_limits<T>::is_signed) {
@@ -83,7 +92,7 @@ namespace mtmath {
         }
       }
       else if ((is_pos_infinity() && other.is_pos_infinity()) || (is_neg_infinity() && other.is_neg_infinity())) {
-        *this;
+        return *this;
       }
       else {
         numerator = 0;
@@ -136,6 +145,12 @@ namespace mtmath {
       return copy;
     }
 
+    friend std::ostream& operator<<(std::ostream& o, const mtmath::RationalBase<T>& r)
+    {
+      o << r.numerator << "/" << r.denominator;
+      return o;
+    }
+
   private:
     T numerator;
     T denominator;
@@ -185,6 +200,8 @@ namespace mtmath {
       }
     }
   };
+
+  using Rational = RationalBase<mtmath::BigInt>;
 }
 
 template <typename RB>
@@ -216,23 +233,37 @@ public:
   static constexpr bool tinyness_before = std::numeric_limits<RB>::tinyness_before;
 
   static constexpr Type min() noexcept {
-    return Type{ 1, std::numeric_limits<RB>::max() };
+    if constexpr (std::numeric_limits<RB>::is_bounded) {
+      return Type{1, std::numeric_limits<RB>::max()};
+    }
+    else {
+      return -infinity();
+    }
+  }
+
+  static constexpr Type max() noexcept {
+    if constexpr (std::numeric_limits<RB>::is_bounded) {
+      return Type{std::numeric_limits<RB>::max(), RB{1}};
+    }
+    else {
+      return infinity();
+    }
   }
 
   static constexpr Type lowest() noexcept {
-    if constexpr (std::numeric_limits<RB>::min() != 0) {
+    if constexpr (std::numeric_limits<RB>::is_bounded && std::numeric_limits<RB>::min() != 0) {
       return Type{
-        1, std::numeric_limits<RB>::max()
+        RB{1}, std::numeric_limits<RB>::max()
       };
     }
     else {
-      return Type{ 0, 1 };
+      return Type{ RB{0}, RB{1}};
     }
   }
 
   static constexpr Type epsilon() noexcept {
     if (std::numeric_limits<RB>::epsilon()) {
-      return Type{std::numeric_limits<RB>::epsilon(), 1};
+      return Type{std::numeric_limits<RB>::epsilon(), RB{1}};
     }
     else {
       return min();
@@ -240,15 +271,15 @@ public:
   }
 
   static constexpr Type round_error() noexcept {
-    return Type { 1, 2 };
+    return Type { RB{1}, RB{2}};
   }
 
   static constexpr Type infinity() noexcept {
-    return Type { 1, 0 };
+    return Type { RB{1}, RB{0}};
   }
 
   static constexpr Type quiet_NaN() noexcept {
-    return Type { 0, 0 };
+    return Type { RB{0}, RB{0}};
   }
 
   static constexpr Type signaling_NaN() noexcept {
