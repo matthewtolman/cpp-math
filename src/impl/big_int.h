@@ -137,6 +137,9 @@ namespace mtmath {
     [[nodiscard]] bool operator>(const BigInt& o) const noexcept { return compare(o) > 0; }
     [[nodiscard]] bool operator>=(const BigInt& o) const noexcept { return compare(o) >= 0; }
 
+    [[nodiscard]] BigInt operator<<(size_t i) const noexcept;
+    [[nodiscard]] BigInt operator>>(size_t i) const noexcept;
+
   private:
     void simplify();
     void compress(int base);

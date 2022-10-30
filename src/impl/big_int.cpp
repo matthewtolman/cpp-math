@@ -24,7 +24,7 @@ std::string mtmath::BigInt::to_string(int base) const {
   }
 
   if (is_zero()) {
-    return "0";
+    return base == 16 ? "0x0" : "0";
   }
 
   std::string str;
@@ -179,12 +179,12 @@ bool mtmath::BigInt::abs_less_than(const mtmath::BigInt &o) const noexcept {
 }
 
 mtmath::BigInt mtmath::BigInt::operator/(const mtmath::BigInt &denominator) const noexcept {
-  auto [d, r] = divide(denominator);
-  return d;
+  auto [r, q] = divide(denominator);
+  return q;
 }
 
 mtmath::BigInt mtmath::BigInt::operator%(const mtmath::BigInt &denominator) const noexcept {
-  auto [d, r] = divide(denominator);
+  auto [r, q] = divide(denominator);
   return r;
 }
 
@@ -357,5 +357,40 @@ std::tuple<mtmath::BigInt, mtmath::BigInt> mtmath::BigInt::divide(const mtmath::
 
   remainder.flags = flags ^ denominator.flags;
   quotient.flags = flags ^ denominator.flags;
+  auto numBits = digits->size() * 8;
+
+  for (size_t i = 0; i < numBits; ++i) {
+    auto n = numBits - i - 1;
+    remainder = remainder << 1;
+    auto numeratorBit = ((digits->at(n / 8) & (0x1U << (n % 8))) >> (n % 8)) & 0x1U;
+    if (numeratorBit) {
+      if (remainder.digits->empty()) {
+        remainder.digits->emplace_back(0);
+      }
+      remainder.digits->at(0) |= 0x1;
+    }
+    if (remainder >= denominator) {
+      remainder = remainder - denominator;
+      if (quotient.digits->size() <= n / 8) {
+        quotient.digits->resize((n / 8) + 1);
+      }
+      quotient.digits->at(n / 8) |= 0x1 << (n % 8);
+    }
+  }
+
+  remainder.digits->simplify();
+  quotient.digits->simplify();
   return std::make_tuple(remainder, quotient);
+}
+
+mtmath::BigInt mtmath::BigInt::operator<<(size_t i) const noexcept {
+  mtmath::BigInt res;
+  res.digits = std::make_shared<ByteArray>(digits->operator<<(i));
+  return res;
+}
+
+mtmath::BigInt mtmath::BigInt::operator>>(size_t i) const noexcept {
+  mtmath::BigInt res;
+  res.digits = std::make_shared<ByteArray>(digits->operator>>(i));
+  return res;
 }

@@ -175,11 +175,20 @@ TEST_SUITE("BigInt") {
     CHECK_EQ((mtmath::BigInt(-1485209) * mtmath::BigInt("-2")).to_string(16), "0x2d5332");
   }
 
-//  TEST_CASE("Divide") {
-//    std::string s = (mtmath::BigInt(1485209) / mtmath::BigInt("2")).to_string(16);
-//    CHECK_EQ(s, "0xb54cc");
-//    CHECK_EQ(mtmath::BigInt(1485209) - mtmath::BigInt("934889"), mtmath::BigInt("550320"));
-//    CHECK_EQ(mtmath::BigInt(1485209) - mtmath::BigInt("-934889"), mtmath::BigInt("2420098"));
-//    CHECK_EQ(mtmath::BigInt(-1485209) - mtmath::BigInt("934889"), mtmath::BigInt("-2420098"));
-//  }
+  TEST_CASE("Divide") {
+    std::string s = (mtmath::BigInt(1485209) / mtmath::BigInt("2")).to_string(16);
+    CHECK_EQ(s, "0xb54cc");
+    s = (mtmath::BigInt(1485209) / mtmath::BigInt("3")).to_string(16);
+    CHECK_EQ(s, "0x78ddd");
+    CHECK_EQ(mtmath::BigInt(1485209) / mtmath::BigInt("3"), mtmath::BigInt("495069"));
+  }
+
+  TEST_CASE("Modulo") {
+    std::string s = (mtmath::BigInt(1485209) % mtmath::BigInt("2")).to_string(16);
+    CHECK_EQ(s, "0x1");
+    CHECK_EQ(mtmath::BigInt(1485209) % mtmath::BigInt("3"), mtmath::BigInt("2"));
+    CHECK_EQ(mtmath::BigInt(1485208) % mtmath::BigInt("2"), mtmath::BigInt("0"));
+    CHECK_EQ(mtmath::BigInt(1485210) % mtmath::BigInt("3"), mtmath::BigInt("0"));
+    CHECK_EQ(mtmath::BigInt(1485211) % mtmath::BigInt("3"), mtmath::BigInt("1"));
+  }
 }
