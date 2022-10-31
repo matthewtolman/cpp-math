@@ -640,6 +640,10 @@ mtmath::immut::BigInt mtmath::immut::BigInt::one() {
   return oneConst;
 }
 
+mtmath::immut::BigInt mtmath::immut::BigInt::two() {
+  return twoConst;
+}
+
 mtmath::immut::BigInt mtmath::immut::BigInt::invalid() {
   return invalidConst;
 }

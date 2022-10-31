@@ -12,7 +12,9 @@ namespace mtmath {
   template<typename T>
   class RationalBase {
   public:
-    RationalBase(T numerator, T denominator) noexcept : numerator(std::move(numerator)), denominator(std::move(denominator)) {
+    static_assert(std::numeric_limits<T>::is_signed, "Rationals must use signed numbers");
+
+    RationalBase(T numerator, T denominator = 1) noexcept : numerator(std::move(numerator)), denominator(std::move(denominator)) {
       simplify();
     }
 
@@ -73,10 +75,7 @@ namespace mtmath {
     }
 
     RationalBase operator-() const noexcept {
-      if constexpr (std::numeric_limits<T>::is_signed) {
-        return mtmath::RationalBase<T>{-numerator, denominator};
-      }
-      return *this;
+      return mtmath::RationalBase<T>{-numerator, denominator};
     }
 
     RationalBase& operator+=(const RationalBase& other) noexcept {
@@ -91,8 +90,14 @@ namespace mtmath {
           numerator = n1 + n2;
           simplify();
         }
+        return *this;
       }
-      else if ((is_pos_infinity() && other.is_pos_infinity()) || (is_neg_infinity() && other.is_neg_infinity())) {
+      else if (is_pos_infinity() || is_neg_infinity()) {
+        if (other.is_finite() || *this == other) {
+          return *this;
+        }
+        numerator = 0;
+        denominator = 0;
         return *this;
       }
       else {
@@ -100,7 +105,6 @@ namespace mtmath {
         denominator = 0;
         return *this;
       }
-      return *this;
     }
 
     RationalBase operator+(const RationalBase& other) const noexcept {
@@ -134,8 +138,31 @@ namespace mtmath {
     }
 
     RationalBase& operator/=(const RationalBase& other) noexcept {
-      numerator *= other.denominator;
-      denominator *= other.numerator;
+      if (!is_finite()) {
+        if (other.is_finite()) {
+          if (other.numerator < 0) {
+            numerator *= -1;
+          }
+        }
+        else {
+          numerator = 0;
+          denominator = 0;
+        }
+      }
+      else if (!other.is_finite()) {
+        if (other.is_infinite()) {
+          numerator = 0;
+          denominator = 1;
+        }
+        else {
+          numerator = 0;
+          denominator = 0;
+        }
+      }
+      else {
+        numerator *= other.denominator;
+        denominator *= other.numerator;
+      }
       simplify();
       return *this;
     }
@@ -178,6 +205,34 @@ namespace mtmath {
     }
 
     void simplify() {
+      if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
+        auto nan = std::numeric_limits<T>::quiet_NaN();
+        if (numerator == nan || denominator == nan) {
+          numerator = 0;
+          denominator = 0;
+          return;
+        }
+      }
+
+      if constexpr (std::numeric_limits<T>::has_infinity) {
+        auto pos_infinity = std::numeric_limits<T>::infinity();
+        auto neg_infinity = -std::numeric_limits<T>::infinity();
+        if (denominator == pos_infinity || denominator == neg_infinity) {
+          numerator = 0;
+          denominator = 0;
+          return;
+        }
+        else if (numerator == pos_infinity) {
+          numerator = 1;
+          denominator = 0;
+          return;
+        }
+        else if (numerator == neg_infinity) {
+          numerator = -1;
+          denominator = 0;
+        }
+      }
+
       if (denominator < 0) {
         denominator = -denominator;
       }
@@ -205,97 +260,43 @@ namespace mtmath {
     }
   };
 
+  extern template class RationalBase<mtmath::BigInt>;
   using Rational = RationalBase<mtmath::BigInt>;
 
   namespace immut {
     class Rational {
     public:
-      Rational(mtmath::immut::BigInt numerator, mtmath::immut::BigInt denominator) noexcept
-          : numerator(std::move(numerator)), denominator(std::move(denominator))
-      { simplify(); }
+      Rational(mtmath::immut::BigInt numerator, mtmath::immut::BigInt denominator = 1) noexcept;
 
-      Rational() : numerator(mtmath::immut::BigInt::zero()), denominator(mtmath::immut::BigInt::one()) {}
+      Rational();
 
-      Rational(Rational&& rb) noexcept : numerator(std::move(rb.numerator)), denominator(std::move(rb.denominator)) {}
+      Rational(Rational&& rb) noexcept;
 
-      Rational(const Rational& rb) : numerator(rb.numerator), denominator(rb.denominator) {}
+      Rational(const Rational& rb) = default;
 
-      Rational& operator=(const Rational& rb) {
-        numerator = rb.numerator;
-        denominator = rb.denominator;
-        return *this;
-      }
+      Rational& operator=(const Rational& rb);
 
-      Rational& operator=(Rational&& rb) noexcept {
-        std::swap(numerator, rb.numerator);
-        std::swap(denominator, rb.denominator);
-        return *this;
-      }
+      Rational& operator=(Rational&& rb) noexcept;
 
-      [[nodiscard]] bool is_nan() const noexcept { return denominator.is_zero() && numerator.is_zero(); }
-      [[nodiscard]] bool is_infinite() const noexcept { return denominator.is_zero() && !numerator.is_zero(); }
-      [[nodiscard]] bool is_pos_infinity() const noexcept { return denominator.is_zero() && !numerator.is_zero() && !numerator.is_negative(); }
-      [[nodiscard]] bool is_neg_infinity() const noexcept { return denominator.is_zero() && !numerator.is_zero() && numerator.is_negative(); }
-      [[nodiscard]] bool is_finite() const noexcept { return !denominator.is_zero(); }
-      [[nodiscard]] std::strong_ordering operator<=>(const Rational& o) const noexcept {
-        auto n1 = numerator;
-        auto n2 = o.numerator;
-        if (denominator != o.denominator) {
-          n1 = numerator * o.denominator;
-          n2 = o.numerator * denominator;
-        }
+      [[nodiscard]] bool is_nan() const noexcept;
+      [[nodiscard]] bool is_infinite() const noexcept;
+      [[nodiscard]] bool is_pos_infinity() const noexcept;
+      [[nodiscard]] bool is_neg_infinity() const noexcept;
+      [[nodiscard]] bool is_finite() const noexcept;
+      [[nodiscard]] std::strong_ordering operator<=>(const Rational& o) const noexcept;
+      [[nodiscard]] bool operator==(const Rational& o) const noexcept;
 
-        return n1 <=> n2;
-      }
-      [[nodiscard]] bool operator==(const Rational& o) const noexcept {
-        return ((*this) <=> o) == std::strong_ordering::equal;
-      }
+      Rational operator-() const noexcept;
 
-      Rational operator-() const noexcept {
-        return Rational{-numerator, denominator};
-      }
+      Rational operator+(const Rational& other) const noexcept;
 
-      Rational operator+(const Rational& other) const noexcept {
-        if (is_finite() && other.is_finite()) {
-          auto res = *this;
-          if (denominator == other.denominator) {
-            res.numerator = numerator + other.numerator;
-          }
-          else {
-            auto n1 = numerator * other.denominator;
-            auto n2 = other.numerator * denominator;
-            res.denominator = denominator * other.denominator;
-            res.numerator = n1 + n2;
-            res.simplify();
-          }
-          return res;
-        }
-        else if ((is_pos_infinity() && other.is_pos_infinity()) || (is_neg_infinity() && other.is_neg_infinity())) {
-          return *this;
-        }
-        else {
-          return Rational{mtmath::immut::BigInt::zero(), mtmath::immut::BigInt::zero()};
-        }
-      }
+      Rational operator-(const Rational& other) const noexcept;
 
-      Rational operator-(const Rational& other) const noexcept {
-        return *this + -other;
-      }
+      Rational operator*(const Rational& other) const noexcept;
 
-      Rational operator*(const Rational& other) const noexcept {
-        auto res = Rational{numerator * other.numerator, denominator * other.denominator};
-        res.simplify();
-        return res;
-      }
+      Rational operator/(const Rational& other) const noexcept;
 
-      Rational operator/(const Rational& other) const noexcept {
-        auto res = Rational{numerator * other.denominator, denominator * other.numerator};
-        res.simplify();
-        return res;
-      }
-
-      friend std::ostream& operator<<(std::ostream& o, const Rational& r)
-      {
+      friend std::ostream& operator<<(std::ostream& o, const Rational& r)  {
         o << r.numerator;
         o << "/";
         o << r.denominator;
@@ -306,51 +307,11 @@ namespace mtmath {
       mtmath::immut::BigInt numerator;
       mtmath::immut::BigInt denominator;
 
-      static mtmath::immut::BigInt remainder(const mtmath::immut::BigInt& n, const mtmath::immut::BigInt&d) {
-        if (n < mtmath::immut::BigInt::zero()) {
-          return (-n) % d;
-        }
-        return n % d;
-      }
+      static mtmath::immut::BigInt remainder(const mtmath::immut::BigInt& n, const mtmath::immut::BigInt&d);
 
-      mtmath::immut::BigInt gcd(const mtmath::immut::BigInt& a, const mtmath::immut::BigInt& b) {
-        auto A = a;
-        auto B = b;
-        while (!B.is_zero()) {
-          auto R = remainder(A, B);
-          A = B;
-          B = R;
-        }
-        if (A.is_negative()) {
-          return -A;
-        }
-        return A;
-      }
+      static mtmath::immut::BigInt gcd(const mtmath::immut::BigInt& a, const mtmath::immut::BigInt& b);
 
-      void simplify() {
-        denominator = denominator.abs();
-        auto n = numerator;
-        auto d = denominator;
-        if (d == 1) {
-          return;
-        }
-        else if (!d.is_zero()) {
-          if (remainder(n, d) == 0) {
-            numerator = n / d;
-          }
-          else {
-            auto g = gcd(n, d);
-            if (d > 0) {
-              numerator = n / g;
-              denominator = d / g;
-            }
-            else if (d < 0) {
-              numerator = -n / g;
-              denominator = -d / g;
-            }
-          }
-        }
-      }
+      void simplify();
     };
   }
 }
@@ -362,7 +323,7 @@ public:
   static constexpr bool is_specialized = true;
   static constexpr bool is_signed = std::numeric_limits<RB>::is_signed;
   static constexpr bool is_integer = false;
-  static constexpr bool is_exact = true;
+  static constexpr bool is_exact = !std::numeric_limits<RB>::is_bounded;
   static constexpr bool has_infinity = true;
   static constexpr bool has_quiet_NaN = true;
   static constexpr bool has_signaling_NaN = false;
@@ -385,7 +346,7 @@ public:
 
   static constexpr Type min() noexcept {
     if constexpr (std::numeric_limits<RB>::is_bounded) {
-      return Type{1, std::numeric_limits<RB>::max()};
+      return Type{std::numeric_limits<RB>::min(), 1};
     }
     else {
       return -infinity();
@@ -394,7 +355,7 @@ public:
 
   static constexpr Type max() noexcept {
     if constexpr (std::numeric_limits<RB>::is_bounded) {
-      return Type{std::numeric_limits<RB>::max(), RB{1}};
+      return Type{std::numeric_limits<RB>::max()};
     }
     else {
       return infinity();
@@ -413,12 +374,7 @@ public:
   }
 
   static constexpr Type epsilon() noexcept {
-    if (std::numeric_limits<RB>::epsilon()) {
-      return Type{std::numeric_limits<RB>::epsilon(), RB{1}};
-    }
-    else {
-      return min();
-    }
+    return lowest();
   }
 
   static constexpr Type round_error() noexcept {
@@ -445,9 +401,9 @@ public:
 template<>
 class std::numeric_limits<mtmath::RationalBase<mtmath::BigInt>> {
 public:
-  using Type = mtmath::immut::Rational;
+  using Type = mtmath::RationalBase<mtmath::BigInt>;
 
-#define MTMATH_RATIONAL_DEF_TRAIT(trait) static constexpr bool trait = std::numeric_limits<mtmath::BigInt>:: trait;
+#define MTMATH_RATIONAL_DEF_TRAIT(trait) static constexpr decltype(std::numeric_limits<mtmath::BigInt>:: trait) trait = std::numeric_limits<mtmath::BigInt>:: trait;
 
   static constexpr bool is_specialized = true;
   MTMATH_RATIONAL_DEF_TRAIT(is_signed)
@@ -458,7 +414,7 @@ public:
   static constexpr bool has_signaling_NaN = false;
   static constexpr std::float_denorm_style has_denorm = std::denorm_absent;
   static constexpr bool has_denorm_loss = false;
-  static constexpr std::float_round_style round_style = std::numeric_limits<mtmath::BigInt>::round_style;
+  MTMATH_RATIONAL_DEF_TRAIT(round_style)
   MTMATH_RATIONAL_DEF_TRAIT(is_iec559)
   MTMATH_RATIONAL_DEF_TRAIT(is_bounded)
   MTMATH_RATIONAL_DEF_TRAIT(is_modulo)
@@ -484,23 +440,23 @@ public:
   }
 
   static Type lowest() noexcept {
-    return Type{mtmath::immut::BigInt::zero(), mtmath::immut::BigInt::one()};
+    return Type{mtmath::BigInt::zero(), mtmath::BigInt::one()};
   }
 
   static Type epsilon() noexcept {
-    return Type{mtmath::immut::BigInt::zero(), mtmath::immut::BigInt::one()};
+    return Type{mtmath::BigInt::zero(), mtmath::BigInt::one()};
   }
 
   static Type round_error() noexcept {
-    return Type{mtmath::immut::BigInt::one(), mtmath::immut::BigInt::two()};
+    return Type{mtmath::BigInt::one(), mtmath::BigInt::two()};
   }
 
   static Type infinity() noexcept {
-    return Type{mtmath::immut::BigInt::one(), mtmath::immut::BigInt::zero()};
+    return Type{mtmath::BigInt::one(), mtmath::BigInt::zero()};
   }
 
   static Type quiet_NaN() noexcept {
-    return Type{mtmath::immut::BigInt::zero(), mtmath::immut::BigInt::zero()};
+    return Type{mtmath::BigInt::zero(), mtmath::BigInt::zero()};
   }
 
   static Type signaling_NaN() noexcept {
@@ -517,7 +473,7 @@ class std::numeric_limits<mtmath::immut::Rational> {
 public:
   using Type = mtmath::immut::Rational;
 
-#define MTMATH_IMMUT_RATIONAL_DEF_TRAIT(trait) static constexpr bool trait = std::numeric_limits<mtmath::immut::BigInt>:: trait;
+#define MTMATH_IMMUT_RATIONAL_DEF_TRAIT(trait) static constexpr decltype(std::numeric_limits<mtmath::immut::BigInt>:: trait) trait = std::numeric_limits<mtmath::immut::BigInt>:: trait;
 
   static constexpr bool is_specialized = true;
   MTMATH_IMMUT_RATIONAL_DEF_TRAIT(is_signed)
@@ -528,7 +484,7 @@ public:
   static constexpr bool has_signaling_NaN = false;
   static constexpr std::float_denorm_style has_denorm = std::denorm_absent;
   static constexpr bool has_denorm_loss = false;
-  static constexpr std::float_round_style round_style = std::numeric_limits<mtmath::immut::BigInt>::round_style;
+  MTMATH_IMMUT_RATIONAL_DEF_TRAIT(round_style)
   MTMATH_IMMUT_RATIONAL_DEF_TRAIT(is_iec559)
   MTMATH_IMMUT_RATIONAL_DEF_TRAIT(is_bounded)
   MTMATH_IMMUT_RATIONAL_DEF_TRAIT(is_modulo)
