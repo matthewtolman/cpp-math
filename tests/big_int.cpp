@@ -124,7 +124,7 @@ TEST_SUITE("BigInt") {
   }
 
   TEST_CASE("Subtract") {
-    std::string s = (mtmath::BigInt(1485209) - mtmath::BigInt("934889")).to_string(16);
+    std::string s = *(mtmath::BigInt(1485209) - mtmath::BigInt("934889")).to_string(16);
     CHECK_EQ(s, "0x865b0");
     CHECK_EQ(mtmath::BigInt(1485209) -= mtmath::BigInt("934889"), mtmath::BigInt("550320"));
     CHECK_EQ(mtmath::BigInt(1485209) - mtmath::BigInt("-934889"), mtmath::BigInt("2420098"));
@@ -218,9 +218,9 @@ TEST_SUITE("BigInt") {
   }
 
   TEST_CASE("Divide") {
-    std::string s = (mtmath::BigInt(1485209) / mtmath::BigInt("2")).to_string(16);
+    std::string s = (mtmath::BigInt(1485209) / mtmath::BigInt("2")).to_string(16).value();
     CHECK_EQ(s, "0xb54cc");
-    s = (mtmath::BigInt(1485209) / mtmath::BigInt("3")).to_string(16);
+    s = (mtmath::BigInt(1485209) / mtmath::BigInt("3")).to_string(16).value();
     CHECK_EQ(s, "0x78ddd");
     CHECK_EQ(mtmath::BigInt(1485209) /= mtmath::BigInt("3"), mtmath::BigInt("495069"));
 
@@ -230,7 +230,7 @@ TEST_SUITE("BigInt") {
   }
 
   TEST_CASE("Modulo") {
-    std::string s = (mtmath::BigInt(1485209) % mtmath::BigInt("2")).to_string(16);
+    std::string s = (mtmath::BigInt(1485209) % mtmath::BigInt("2")).to_string(16).value();
     CHECK_EQ(s, "0x1");
     CHECK_EQ(mtmath::BigInt(1485209) % mtmath::BigInt("3"), mtmath::BigInt("2"));
     CHECK_EQ(mtmath::BigInt(1485208) %= mtmath::BigInt("2"), mtmath::BigInt("0"));
@@ -279,6 +279,12 @@ TEST_SUITE("BigInt") {
     using BI = mtmath::BigInt;
     CHECK_EQ(BI{"1234"}.abs_val(), BI{"1234"});
     CHECK_EQ(BI{"-1234"}.abs_val(), BI{"1234"});
+  }
+
+  TEST_CASE("to i64") {
+    using BI = mtmath::BigInt;
+    CHECK_EQ(BI{"1234"}.as_i64(), 1234);
+    CHECK_EQ(BI{"-1234"}.as_i64(), -1234);
   }
 }
 
@@ -396,7 +402,7 @@ TEST_SUITE("immut BigInt") {
   }
 
   TEST_CASE("Subtract") {
-    std::string s = (mtmath::immut::BigInt(1485209) - mtmath::immut::BigInt("934889")).to_string(16);
+    std::string s = (mtmath::immut::BigInt(1485209) - mtmath::immut::BigInt("934889")).to_string(16).value();
     CHECK_EQ(s, "0x865b0");
     CHECK_EQ(mtmath::immut::BigInt(1485209) - mtmath::immut::BigInt("934889"), mtmath::immut::BigInt("550320"));
     CHECK_EQ(mtmath::immut::BigInt(1485209) - mtmath::immut::BigInt("-934889"), mtmath::immut::BigInt("2420098"));
@@ -490,9 +496,9 @@ TEST_SUITE("immut BigInt") {
   }
 
   TEST_CASE("Divide") {
-    std::string s = (mtmath::immut::BigInt(1485209) / mtmath::immut::BigInt("2")).to_string(16);
+    std::string s = (mtmath::immut::BigInt(1485209) / mtmath::immut::BigInt("2")).to_string(16).value();
     CHECK_EQ(s, "0xb54cc");
-    s = (mtmath::immut::BigInt(1485209) / mtmath::immut::BigInt("3")).to_string(16);
+    s = (mtmath::immut::BigInt(1485209) / mtmath::immut::BigInt("3")).to_string(16).value();
     CHECK_EQ(s, "0x78ddd");
     CHECK_EQ(mtmath::immut::BigInt(1485209) / mtmath::immut::BigInt("3"), mtmath::immut::BigInt("495069"));
     CHECK_FALSE((mtmath::immut::BigInt(1485209) / mtmath::immut::BigInt::zero()).is_valid());
@@ -501,7 +507,7 @@ TEST_SUITE("immut BigInt") {
   }
 
   TEST_CASE("Modulo") {
-    std::string s = (mtmath::immut::BigInt(1485209) % mtmath::immut::BigInt("2")).to_string(16);
+    std::string s = (mtmath::immut::BigInt(1485209) % mtmath::immut::BigInt("2")).to_string(16).value();
     CHECK_EQ(s, "0x1");
     CHECK_EQ(mtmath::immut::BigInt(1485209) % mtmath::immut::BigInt("3"), mtmath::immut::BigInt("2"));
     CHECK_EQ(mtmath::immut::BigInt(1485208) % mtmath::immut::BigInt("2"), mtmath::immut::BigInt("0"));
@@ -550,5 +556,23 @@ TEST_SUITE("immut BigInt") {
     using BI = mtmath::immut::BigInt;
     CHECK_EQ(BI{"1234"}.abs_val(), BI{"1234"});
     CHECK_EQ(BI{"-1234"}.abs_val(), BI{"1234"});
+  }
+
+  TEST_CASE("to i64") {
+    using BI = mtmath::immut::BigInt;
+    CHECK_EQ(BI{"1234"}.as_i64(), 1234);
+    CHECK_EQ(BI{"-1234"}.as_i64(), -1234);
+    // Make sure we handle maximum i64
+    CHECK_EQ(BI{"9223372036854775807"}.as_i64(), 9223372036854775807);
+    // Make sure we handle our largest possible negative value
+    CHECK_EQ(BI{"-9223372036854775807"}.as_i64(), -9223372036854775807);
+    // Make sure we truncate one bit over
+    CHECK_EQ(BI{"18446744073709551615"}.as_i64(), 9223372036854775807);
+    // Make sure we preserve sign bits when we truncate
+    CHECK_EQ(BI{"-18446744073709551615"}.as_i64(), -9223372036854775807);
+    // Make sure we truncate really large numbers
+    CHECK_EQ(BI{"170141183460469231731687303715884105727"}.as_i64(), 9223372036854775807);
+    // Make sure we preserve the sign for really large numbers
+    CHECK_EQ(BI{"-170141183460469231731687303715884105727"}.as_i64(), -9223372036854775807);
   }
 }

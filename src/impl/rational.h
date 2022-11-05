@@ -14,48 +14,48 @@ namespace mtmath {
   public:
     static_assert(std::numeric_limits<T>::is_signed, "Rationals must use signed numbers");
 
-    RationalBase(T numerator, T denominator = 1) noexcept : numerator(std::move(numerator)), denominator(std::move(denominator)) {
+    RationalBase(T numerator, T denominator = 1) noexcept : m_numerator(std::move(numerator)), m_denominator(std::move(denominator)) {
       simplify();
     }
 
     RationalBase()
-        : numerator(0),
-          denominator(1)
+        : m_numerator(0),
+          m_denominator(1)
     {}
 
     RationalBase(RationalBase&& rb) noexcept
-        : numerator(std::move(rb.numerator)),
-          denominator(std::move(rb.denominator))
+        : m_numerator(std::move(rb.m_numerator)),
+          m_denominator(std::move(rb.m_denominator))
     {}
 
     RationalBase(const RationalBase& rb)
-        : numerator(rb.numerator),
-          denominator(rb.denominator)
+        : m_numerator(rb.m_numerator),
+          m_denominator(rb.m_denominator)
     {}
 
     RationalBase& operator=(const RationalBase& rb) {
-      numerator = rb.numerator;
-      denominator = rb.denominator;
+      m_numerator = rb.m_numerator;
+      m_denominator = rb.m_denominator;
       return *this;
     }
 
     RationalBase& operator=(RationalBase&& rb) noexcept {
-      std::swap(numerator, rb.numerator);
-      std::swap(denominator, rb.denominator);
+      std::swap(m_numerator, rb.m_numerator);
+      std::swap(m_denominator, rb.m_denominator);
       return *this;
     }
 
-    [[nodiscard]] bool is_nan() const noexcept { return denominator == T{0} && numerator == T{0}; }
-    [[nodiscard]] bool is_infinite() const noexcept { return denominator == T{0} && numerator != T{0}; }
-    [[nodiscard]] bool is_pos_infinity() const noexcept { return denominator == T{0} && numerator > T{0}; }
-    [[nodiscard]] bool is_neg_infinity() const noexcept { return denominator == T{0} && numerator < T{0}; }
-    [[nodiscard]] bool is_finite() const noexcept { return denominator != T{0}; }
+    [[nodiscard]] bool is_nan() const noexcept { return m_denominator == T{0} && m_numerator == T{0}; }
+    [[nodiscard]] bool is_infinite() const noexcept { return m_denominator == T{0} && m_numerator != T{0}; }
+    [[nodiscard]] bool is_pos_infinity() const noexcept { return m_denominator == T{0} && m_numerator > T{0}; }
+    [[nodiscard]] bool is_neg_infinity() const noexcept { return m_denominator == T{0} && m_numerator < T{0}; }
+    [[nodiscard]] bool is_finite() const noexcept { return m_denominator != T{0}; }
     [[nodiscard]] std::strong_ordering operator<=>(const RationalBase& o) const noexcept {
-      auto n1 = numerator;
-      auto n2 = o.numerator;
-      if (denominator != o.denominator) {
-        n1 = numerator * o.denominator;
-        n2 = o.numerator * denominator;
+      auto n1 = m_numerator;
+      auto n2 = o.m_numerator;
+      if (m_denominator != o.m_denominator) {
+        n1 = m_numerator * o.m_denominator;
+        n2 = o.m_numerator * m_denominator;
       }
 
       auto cmp = n1 <=> n2;
@@ -75,19 +75,19 @@ namespace mtmath {
     }
 
     RationalBase operator-() const noexcept {
-      return mtmath::RationalBase<T>{-numerator, denominator};
+      return mtmath::RationalBase<T>{-m_numerator, m_denominator};
     }
 
     RationalBase& operator+=(const RationalBase& other) noexcept {
       if (is_finite() && other.is_finite()) {
-        if (denominator == other.denominator) {
-          numerator = numerator + other.numerator;
+        if (m_denominator == other.m_denominator) {
+          m_numerator = m_numerator + other.m_numerator;
         }
         else {
-          auto n1 = numerator * other.denominator;
-          auto n2 = other.numerator * denominator;
-          denominator = denominator * other.denominator;
-          numerator = n1 + n2;
+          auto n1 = m_numerator * other.m_denominator;
+          auto n2 = other.m_numerator * m_denominator;
+          m_denominator = m_denominator * other.m_denominator;
+          m_numerator = n1 + n2;
           simplify();
         }
         return *this;
@@ -96,13 +96,13 @@ namespace mtmath {
         if (other.is_finite() || *this == other) {
           return *this;
         }
-        numerator = 0;
-        denominator = 0;
+        m_numerator = 0;
+        m_denominator = 0;
         return *this;
       }
       else {
-        numerator = 0;
-        denominator = 0;
+        m_numerator = 0;
+        m_denominator = 0;
         return *this;
       }
     }
@@ -125,8 +125,8 @@ namespace mtmath {
     }
 
     RationalBase& operator*=(const RationalBase& other) noexcept {
-      numerator *= other.numerator;
-      denominator *= other.denominator;
+      m_numerator *= other.m_numerator;
+      m_denominator *= other.m_denominator;
       simplify();
       return *this;
     }
@@ -140,28 +140,28 @@ namespace mtmath {
     RationalBase& operator/=(const RationalBase& other) noexcept {
       if (!is_finite()) {
         if (other.is_finite()) {
-          if (other.numerator < 0) {
-            numerator *= -1;
+          if (other.m_numerator < 0) {
+            m_numerator *= -1;
           }
         }
         else {
-          numerator = 0;
-          denominator = 0;
+          m_numerator = 0;
+          m_denominator = 0;
         }
       }
       else if (!other.is_finite()) {
         if (other.is_infinite()) {
-          numerator = 0;
-          denominator = 1;
+          m_numerator = 0;
+          m_denominator = 1;
         }
         else {
-          numerator = 0;
-          denominator = 0;
+          m_numerator = 0;
+          m_denominator = 0;
         }
       }
       else {
-        numerator *= other.denominator;
-        denominator *= other.numerator;
+        m_numerator *= other.m_denominator;
+        m_denominator *= other.m_numerator;
       }
       simplify();
       return *this;
@@ -175,13 +175,21 @@ namespace mtmath {
 
     friend std::ostream& operator<<(std::ostream& o, const mtmath::RationalBase<T>& r)
     {
-      o << r.numerator << "/" << r.denominator;
+      o << r.m_numerator << "/" << r.m_denominator;
       return o;
     }
 
+    const T& numerator() const noexcept {
+        return m_numerator;
+    }
+
+    const T& denominator() const noexcept {
+      return m_denominator;
+    }
+
   private:
-    T numerator;
-    T denominator;
+    T m_numerator;
+    T m_denominator;
 
     T remainder(const T& n, const T&d) {
       if (n < 0) {
@@ -207,9 +215,9 @@ namespace mtmath {
     void simplify() {
       if constexpr (std::numeric_limits<T>::has_quiet_NaN) {
         auto nan = std::numeric_limits<T>::quiet_NaN();
-        if (numerator == nan || denominator == nan) {
-          numerator = 0;
-          denominator = 0;
+        if (m_numerator == nan || m_denominator == nan) {
+          m_numerator = 0;
+          m_denominator = 0;
           return;
         }
       }
@@ -217,43 +225,43 @@ namespace mtmath {
       if constexpr (std::numeric_limits<T>::has_infinity) {
         auto pos_infinity = std::numeric_limits<T>::infinity();
         auto neg_infinity = -std::numeric_limits<T>::infinity();
-        if (denominator == pos_infinity || denominator == neg_infinity) {
-          numerator = 0;
-          denominator = 0;
+        if (m_denominator == pos_infinity || m_denominator == neg_infinity) {
+          m_numerator = 0;
+          m_denominator = 0;
           return;
         }
-        else if (numerator == pos_infinity) {
-          numerator = 1;
-          denominator = 0;
+        else if (m_numerator == pos_infinity) {
+          m_numerator = 1;
+          m_denominator = 0;
           return;
         }
-        else if (numerator == neg_infinity) {
-          numerator = -1;
-          denominator = 0;
+        else if (m_numerator == neg_infinity) {
+          m_numerator = -1;
+          m_denominator = 0;
         }
       }
 
-      if (denominator < 0) {
-        denominator = -denominator;
+      if (m_denominator < 0) {
+        m_denominator = -m_denominator;
       }
-      auto n = numerator;
-      auto d = denominator;
+      auto n = m_numerator;
+      auto d = m_denominator;
       if (d == 1) {
         return;
       }
       else if (d != 0) {
         if (remainder(n, d) == 0) {
-          numerator = n / d;
+          m_numerator = n / d;
         }
         else {
           auto g = gcd(n, d);
           if (d > 0) {
-            numerator = n / g;
-            denominator = d / g;
+            m_numerator = n / g;
+            m_denominator = d / g;
           }
           else if (d < 0) {
-            numerator = -n / g;
-            denominator = -d / g;
+            m_numerator = -n / g;
+            m_denominator = -d / g;
           }
         }
       }
@@ -262,6 +270,11 @@ namespace mtmath {
 
   extern template class RationalBase<mtmath::BigInt>;
   using Rational = RationalBase<mtmath::BigInt>;
+
+  namespace c {
+    void into(const mtmath::Rational& bi, MtMath_Rational* out);
+    void into(const MtMath_Rational& cbi, mtmath::Rational* out);
+  }
 
   namespace immut {
     class Rational {

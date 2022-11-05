@@ -194,3 +194,18 @@ void mtmath::immut::Rational::simplify() {
     }
   }
 }
+
+void mtmath::c::into(const mtmath::Rational &bi, MtMath_Rational *out) {
+  auto num = bi.numerator();
+  auto den = bi.denominator();
+  into(num, &out->numerator);
+  into(den, &out->denominator);
+}
+
+void mtmath::c::into(const MtMath_Rational &cbi, mtmath::Rational *out) {
+  mtmath::BigInt num;
+  mtmath::BigInt den;
+  into(cbi.numerator, &num);
+  into(cbi.denominator, &den);
+  *out = Rational(num, den);
+}

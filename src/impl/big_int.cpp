@@ -234,7 +234,11 @@ mtmath::immut::BigInt mtmath::BigInt::to_immut() const {
   }
 }
 
-std::string mtmath::BigInt::to_string(int base) const {
+std::optional<std::string> mtmath::BigInt::to_string(int base) const {
+  if (base < 2 || base > 32) {
+    return std::nullopt;
+  }
+
   if (!is_valid()) {
     return "NaN";
   }
@@ -316,7 +320,11 @@ mtmath::immut::BigInt::BigInt(const mtmath::immut::BigInt &other) = default;
 mtmath::immut::BigInt::BigInt(mtmath::immut::BigInt &&other) noexcept : flags(other.flags), digits(std::move(other.digits)) {}
 mtmath::immut::BigInt::BigInt(uint8_t flags, std::shared_ptr<ByteArray> digits) : flags(flags), digits(std::move(digits)) {simplify();}
 
-std::string mtmath::immut::BigInt::to_string(int base) const {
+std::optional<std::string> mtmath::immut::BigInt::to_string(int base) const {
+  if (base < 2 || base > 32) {
+    return std::nullopt;
+  }
+
   if (!is_valid()) {
     return "NaN";
   }
@@ -684,4 +692,34 @@ mtmath::BigInt mtmath::immut::BigInt::to_mut() const {
   else {
     return mtmath::BigInt{flags, ByteArray{}};
   }
+}
+
+void mtmath::c::into(const mtmath::BigInt& bi, MtMath_BigInt* out) {
+  free(out->digits.bytes);
+  out->digits.len = bi.digits.size();
+  out->digits.bytes = static_cast<uint8_t *>(malloc(sizeof(uint8_t) * out->digits.len));
+  memcpy(out->digits.bytes, std::addressof(bi.digits[0]), out->digits.len);
+  out->flags = bi.flags;
+}
+
+void mtmath::c::into(const MtMath_BigInt& cbi, mtmath::BigInt* out) {
+  out->flags = cbi.flags;
+  out->digits.resize(cbi.digits.len);
+  memcpy(std::addressof(out->digits[0]), cbi.digits.bytes, cbi.digits.len);
+}
+
+int64_t mtmath::BigInt::as_i64() const noexcept {
+  auto val = std::abs(digits.as<int64_t>());
+  if (is_negative()) {
+    val *= -1;
+  }
+  return val;
+}
+
+int64_t mtmath::immut::BigInt::as_i64() const noexcept {
+  auto val = static_cast<int64_t>(digits->as<uint64_t>() & 0x7fffffffffffffff);
+  if (is_negative()) {
+    val *= -1;
+  }
+  return val;
 }

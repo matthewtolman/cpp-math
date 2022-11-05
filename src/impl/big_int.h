@@ -5,8 +5,17 @@
 #include <tuple>
 #include "byte_array.h"
 #include <compare>
+#include "../mtmath_c.h"
+#include <optional>
 
 namespace mtmath {
+  class BigInt;
+
+  namespace c {
+    void into(const mtmath::BigInt& bi, MtMath_BigInt* out);
+    void into(const MtMath_BigInt& cbi, mtmath::BigInt* out);
+  }
+
   namespace immut {
     class BigInt;
   }
@@ -28,17 +37,17 @@ namespace mtmath {
     BigInt& operator=(const BigInt& other) = default;
     BigInt& operator=(BigInt&& other) noexcept { flags = other.flags; std::swap(digits, other.digits); return *this; }
 
-    [[nodiscard]] static BigInt zero() { return BigInt{}; }
-    [[nodiscard]] static BigInt one() { return BigInt{1}; }
-    [[nodiscard]] static BigInt two() { return BigInt{2}; }
-    [[nodiscard]] static BigInt invalid() { return BigInt{INVALID, ByteArray{}}; }
+    static BigInt zero() { return BigInt{}; }
+    static BigInt one() { return BigInt{1}; }
+    static BigInt two() { return BigInt{2}; }
+    static BigInt invalid() { return BigInt{INVALID, ByteArray{}}; }
 
-    [[nodiscard]] bool is_zero() const noexcept { return digits.empty(); }
-    [[nodiscard]] bool is_valid() const noexcept { return !(flags & INVALID); }
-    [[nodiscard]] bool is_negative() const noexcept { return flags & NEGATIVE; }
+    bool is_zero() const noexcept { return digits.empty(); }
+    bool is_valid() const noexcept { return !(flags & INVALID); }
+    bool is_negative() const noexcept { return flags & NEGATIVE; }
 
     BigInt& abs() noexcept { flags &= ~NEGATIVE; return *this; }
-    [[nodiscard]] BigInt abs_val() const noexcept { auto copy = *this; return copy.abs(); }
+    BigInt abs_val() const noexcept { auto copy = *this; return copy.abs(); }
 
     template<typename T>
     BigInt(const T& number, int base) {
@@ -119,39 +128,42 @@ namespace mtmath {
       simplify();
     }
 
-    [[nodiscard]] std::string to_string(int base) const;
+    std::optional<std::string> to_string(int base) const;
+    int64_t as_i64() const noexcept;
 
-    [[nodiscard]] BigInt operator-() const;
+    BigInt operator-() const;
     BigInt& operator+=(const BigInt& o) noexcept;
     BigInt& operator-=(const BigInt& o) noexcept;
     BigInt& operator/=(const BigInt& o) noexcept;
     BigInt& operator%=(const BigInt& o) noexcept;
     BigInt& operator*=(const BigInt& o) noexcept;
-    [[nodiscard]] BigInt operator+(const BigInt& o) const { auto copy = *this; return copy += o; }
-    [[nodiscard]] BigInt operator-(const BigInt& o) const { auto copy = *this; return copy -= o; }
-    [[nodiscard]] BigInt operator/(const BigInt& o) const { auto copy = *this; return copy /= o; }
-    [[nodiscard]] BigInt operator%(const BigInt& o) const { auto copy = *this; return copy %= o; }
-    [[nodiscard]] BigInt operator*(const BigInt& o) const { auto copy = *this; return copy *= o; }
-    [[nodiscard]] std::tuple<BigInt, BigInt> divide(const BigInt& denominator) const noexcept;
+    BigInt operator+(const BigInt& o) const { auto copy = *this; return copy += o; }
+    BigInt operator-(const BigInt& o) const { auto copy = *this; return copy -= o; }
+    BigInt operator/(const BigInt& o) const { auto copy = *this; return copy /= o; }
+    BigInt operator%(const BigInt& o) const { auto copy = *this; return copy %= o; }
+    BigInt operator*(const BigInt& o) const { auto copy = *this; return copy *= o; }
+    std::tuple<BigInt, BigInt> divide(const BigInt& denominator) const noexcept;
 
-    [[nodiscard]] std::strong_ordering operator<=>(const BigInt& o) const noexcept;
-    [[nodiscard]] bool operator==(const BigInt& o) const noexcept {
+    std::strong_ordering operator<=>(const BigInt& o) const noexcept;
+    bool operator==(const BigInt& o) const noexcept {
       return *this <=> o == std::strong_ordering::equal;
     }
 
-    [[nodiscard]] BigInt operator>>(size_t i) const { auto copy = *this; copy >>= i; return copy; }
-    [[nodiscard]] BigInt operator<<(size_t i) const { auto copy = *this; copy <<= i; return copy; }
+    BigInt operator>>(size_t i) const { auto copy = *this; copy >>= i; return copy; }
+    BigInt operator<<(size_t i) const { auto copy = *this; copy <<= i; return copy; }
     BigInt& operator<<=(size_t i);
     BigInt& operator>>=(size_t i);
 
-    [[nodiscard]] immut::BigInt to_immut() const;
+    immut::BigInt to_immut() const;
 
     friend ::mtmath::immut::BigInt;
+    friend void ::mtmath::c::into(const BigInt& bi, MtMath_BigInt* out);
+    friend void ::mtmath::c::into(const MtMath_BigInt& cbi, BigInt* out);
 
   private:
     void simplify();
     void compress(int base);
-    [[nodiscard]] int abs_compare(const BigInt& o) const noexcept;
+    int abs_compare(const BigInt& o) const noexcept;
   };
 
   namespace immut {
@@ -179,17 +191,18 @@ namespace mtmath {
       BigInt& operator=(const BigInt& other);
       BigInt& operator=(BigInt&& other) noexcept;
 
-      [[nodiscard]] static BigInt zero();
-      [[nodiscard]] static BigInt one();
-      [[nodiscard]] static BigInt two();
-      [[nodiscard]] static BigInt invalid();
+      static BigInt zero();
+      static BigInt one();
+      static BigInt two();
+      static BigInt invalid();
 
-      [[nodiscard]] bool is_zero() const noexcept;
-      [[nodiscard]] bool is_valid() const noexcept;
-      [[nodiscard]] bool is_negative() const noexcept;
+      bool is_zero() const noexcept;
+      bool is_valid() const noexcept;
+      bool is_negative() const noexcept;
 
-      [[nodiscard]] BigInt abs() const noexcept;
-      [[nodiscard]] BigInt abs_val() const noexcept { return abs(); }
+      BigInt abs() const noexcept;
+      BigInt abs_val() const noexcept { return abs(); }
+      int64_t as_i64() const noexcept;
 
       template<typename T>
       BigInt(const T& number, int base) {
@@ -270,32 +283,32 @@ namespace mtmath {
         simplify();
       }
 
-      [[nodiscard]] std::string to_string(int base) const;
+      std::optional<std::string> to_string(int base) const;
 
-      [[nodiscard]] BigInt operator-() const;
-      [[nodiscard]] BigInt operator+(const BigInt& o) const noexcept;
-      [[nodiscard]] BigInt operator-(const BigInt& o) const noexcept;
-      [[nodiscard]] BigInt operator/(const BigInt& o) const noexcept;
-      [[nodiscard]] BigInt operator%(const BigInt& o) const noexcept;
-      [[nodiscard]] BigInt operator*(const BigInt& o) const noexcept;
-      [[nodiscard]] std::tuple<BigInt, BigInt> divide(const BigInt& denominator) const noexcept;
+      BigInt operator-() const;
+      BigInt operator+(const BigInt& o) const noexcept;
+      BigInt operator-(const BigInt& o) const noexcept;
+      BigInt operator/(const BigInt& o) const noexcept;
+      BigInt operator%(const BigInt& o) const noexcept;
+      BigInt operator*(const BigInt& o) const noexcept;
+      std::tuple<BigInt, BigInt> divide(const BigInt& denominator) const noexcept;
 
-      [[nodiscard]] std::strong_ordering operator<=>(const BigInt& o) const noexcept;
-      [[nodiscard]] bool operator==(const BigInt& o) const noexcept {
+      std::strong_ordering operator<=>(const BigInt& o) const noexcept;
+      bool operator==(const BigInt& o) const noexcept {
         return *this <=> o == std::strong_ordering::equal;
       }
 
-      [[nodiscard]] BigInt operator<<(size_t i) const noexcept;
-      [[nodiscard]] BigInt operator>>(size_t i) const noexcept;
+      BigInt operator<<(size_t i) const noexcept;
+      BigInt operator>>(size_t i) const noexcept;
 
       friend ::mtmath::BigInt;
 
-      [[nodiscard]] ::mtmath::BigInt to_mut() const;
+      ::mtmath::BigInt to_mut() const;
 
     private:
       void simplify();
       void compress(int base);
-      [[nodiscard]] bool abs_less_than(const BigInt& o) const noexcept;
+      bool abs_less_than(const BigInt& o) const noexcept;
     };
   }
 }
@@ -424,12 +437,12 @@ public:
 
 inline std::ostream& operator<< (std::ostream& o, const mtmath::BigInt& b)
 {
-  o << b.to_string(10);
+  o << *b.to_string(10);
   return o;
 }
 
 inline std::ostream& operator<< (std::ostream& o, const mtmath::immut::BigInt& b)
 {
-  o << b.to_string(10);
+  o << *b.to_string(10);
   return o;
 }
