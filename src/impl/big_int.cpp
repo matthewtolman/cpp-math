@@ -1,5 +1,4 @@
 #include "big_int.h"
-
 #include <utility>
 
 static char hex_char(uint8_t half_byte) {
