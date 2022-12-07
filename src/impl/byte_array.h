@@ -68,13 +68,14 @@ namespace mtmath {
     T as() const noexcept {
       T res{};
       if constexpr (std::endian::native == std::endian::little) {
-        memcpy(&res, &bytes[0], std::min(sizeof(res), bytes.size()));
+        memcpy(static_cast<void*>(&res), static_cast<const void*>(bytes.data()), std::min(sizeof(res), bytes.size()));
       }
       else {
         auto rcopy = bytes;
         std::reverse(rcopy.begin(), rcopy.end());
-        memcpy(&res, &rcopy[0], std::min(sizeof(res), rcopy.size()));
+        memcpy(static_cast<void*>(&res), static_cast<const void*>(rcopy.data()), std::min(sizeof(res), rcopy.size()));
       }
+
       return res;
     }
 

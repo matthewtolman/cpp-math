@@ -239,11 +239,11 @@ std::optional<std::string> mtmath::BigInt::to_string(int base) const {
   }
 
   if (!is_valid()) {
-    return "NaN";
+    return std::optional{std::string{"NaN"}};
   }
 
   if (is_zero()) {
-    return base == 16 ? "0x0" : "0";
+    return base == 16 ? std::optional{std::string{"0x0"}} : std::optional{std::string{"0"}};
   }
 
   return to_immut().to_string(base);
@@ -325,14 +325,14 @@ std::optional<std::string> mtmath::immut::BigInt::to_string(int base) const {
   }
 
   if (!is_valid()) {
-    return "NaN";
+    return std::optional{std::string{"NaN"}};
   }
 
   if (is_zero()) {
-    return base == 16 ? "0x0" : "0";
+    return base == 16 ? std::optional{std::string{"0x0"}} : std::optional{std::string{"0"}};
   }
 
-  std::string str;
+  std::string str{};
   if (base == 16) {
     str.reserve((digits->size() * 2) + (is_negative() ? 1 : 0));
 
