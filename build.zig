@@ -40,11 +40,12 @@ pub fn build(b: *std.build.Builder) void {
 		"-Isrc/",
 	});
 
-	const run_cmd = mt_maths_tests.run();
-	const run_step = b.step("run", "Run tests");
-	run_step.dependOn(&run_cmd.step);
+	const test_cmd = mt_maths_tests.run();
+	const test_step = b.step("test", "Run tests");
+	test_step.dependOn(&test_cmd.step);
 
 	b.default_step.dependOn(&mt_maths_tests.step);
+	b.installArtifact(mt_maths);
 	b.installArtifact(mt_maths_tests);
 }
 
