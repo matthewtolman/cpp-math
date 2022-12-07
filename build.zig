@@ -8,7 +8,6 @@ pub fn build(b: *std.build.Builder) void {
 	const mt_maths = b.addStaticLibrary("mt-maths", null);
 	mt_maths.setTarget(target);
 	mt_maths.setBuildMode(mode);
-	mt_maths.linkLibC();
 	mt_maths.linkLibCpp();
 	//mt_maths.force_pic = true;
 	mt_maths.addCSourceFiles(&.{
@@ -18,13 +17,12 @@ pub fn build(b: *std.build.Builder) void {
 		"src/impl/byte_array.cpp",
 	}, &.{
 		"-std=c++20",
-		"-Wall"
+		"-Wall",
 	});
 
 	const mt_maths_tests = b.addExecutable("mt-maths-tests", null);
 	mt_maths_tests.setTarget(target);
 	mt_maths_tests.setBuildMode(mode);
-	mt_maths.linkLibC();
 	mt_maths_tests.linkLibCpp();
 	mt_maths_tests.linkLibrary(mt_maths);
 	//mt_maths_tests.force_pic = true;

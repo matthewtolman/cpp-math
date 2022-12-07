@@ -183,14 +183,14 @@ void big_int_str_alloc(const MtMath_BigInt *val, char **out) {
   memcpy(*out, str.c_str(), str.size() + 1);
 }
 
-void big_int_str(const MtMath_BigInt *val, char *buffer, unsigned long bufferSize) {
+void big_int_str(const MtMath_BigInt *val, char *buffer, unsigned long long bufferSize) {
   if (!buffer || !bufferSize) {
     return;
   }
   mtmath::BigInt bi;
   mtmath::c::into(*val, &bi);
   auto str = *bi.to_string(10);
-  auto resSize = std::min(str.size() + 1, bufferSize);
+  auto resSize = std::min(static_cast<unsigned long long>(str.size() + 1), bufferSize);
   memcpy(buffer, str.c_str(), resSize);
   buffer[resSize - 1] = '\0';
 }
@@ -208,7 +208,7 @@ bool big_int_str_alloc_rdx(const MtMath_BigInt *val, char **out, int base) {
   return true;
 }
 
-bool big_int_str_rdx(const MtMath_BigInt *val, char *buffer, unsigned long bufferSize, int radix) {
+bool big_int_str_rdx(const MtMath_BigInt *val, char *buffer, unsigned long long bufferSize, int radix) {
   if (!buffer || !bufferSize) {
     return false;
   }
@@ -220,7 +220,7 @@ bool big_int_str_rdx(const MtMath_BigInt *val, char *buffer, unsigned long buffe
   }
 
   auto str = *strOpt;
-  auto resSize = std::min(str.size() + 1, bufferSize);
+  auto resSize = std::min(static_cast<unsigned long long>(str.size() + 1), bufferSize);
   memcpy(buffer, str.c_str(), resSize);
   buffer[resSize - 1] = '\0';
   return true;

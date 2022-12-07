@@ -42,9 +42,9 @@ extern void rem_big_int(const MtMath_BigInt* left, const MtMath_BigInt* right, M
 
 extern long long big_int_ll(const MtMath_BigInt* val);
 extern void big_int_str_alloc(const MtMath_BigInt* val, char** out);
-extern void big_int_str(const MtMath_BigInt* val, char* buffer, unsigned long bufferSize);
+extern void big_int_str(const MtMath_BigInt* val, char* buffer, unsigned long long bufferSize);
 extern bool big_int_str_alloc_rdx(const MtMath_BigInt* val, char** out, int radix);
-extern bool big_int_str_rdx(const MtMath_BigInt* val, char* buffer, unsigned long bufferSize, int radix);
+extern bool big_int_str_rdx(const MtMath_BigInt* val, char* buffer, unsigned long long bufferSize, int radix);
 
 extern void set_rational(MtMath_Rational* ra, const MtMath_BigInt* numerator, const MtMath_BigInt* denominator);
 extern void add_rational(const MtMath_Rational* left, const MtMath_Rational* right, MtMath_Rational* out);
